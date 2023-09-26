@@ -63,7 +63,7 @@ func main() {
 		var originState = genOriginState(rowCount, colCount)
 		exec(originState, lastState, rowCount, colCount, 0, 0)
 
-		fmt.Printf("result: %d - process in %v", count, time.Since(start))
+		fmt.Printf("result: %d - process in %v\n", count, time.Since(start))
 	}
 }
 

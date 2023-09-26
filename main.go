@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 var count = 0
 
@@ -53,12 +56,14 @@ func main() {
 		},
 	}
 	for _, lastState := range lastStates {
+		start := time.Now()
 		count = 0
 		var rowCount = len(lastState)
 		var colCount = len(lastState[0])
 		var originState = genOriginState(rowCount, colCount)
 		exec(originState, lastState, rowCount, colCount, 0, 0)
-		fmt.Println(count)
+
+		fmt.Printf("result: %d - process in %v", count, time.Since(start))
 	}
 }
 

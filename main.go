@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"time"
-
-	"github.com/golang-collections/collections/stack"
 )
 
 type Params struct {
@@ -43,8 +41,36 @@ var c2x2FromP = map[string][][][]int{
 func main() {
 	var lastStates = [][][]int{
 		{
-			{1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 0},
+			{0, 1},
 		},
+		{
+			{0},
+			{1},
+		},
+		{
+			{1, 1},
+			{1, 1},
+		},
+		{
+			{1, 0},
+			{0, 0},
+		},
+		{
+			{0, 1},
+			{1, 0},
+		},
+		{
+			{0, 1},
+			{1, 1},
+		},
+		{
+			{1, 1},
+			{1, 0},
+		},
+		//{
+		//	{1, 0},
+		//	{0, 1},
+		//},
 	}
 	for _, lastState := range lastStates {
 		start := time.Now()
@@ -53,7 +79,11 @@ func main() {
 		var colCount = len(lastState[0])
 		var originState = genOriginState(rowCount, colCount)
 		exec(originState, lastState, rowCount, colCount, 0, 0)
-		coolExec(lastState, rowCount, colCount)
+		var caseCount = genCaseCount(rowCount, colCount)
+		coolExec(caseCount, lastState, rowCount, colCount)
+
+		fmt.Printf("cc %+v\n", cc)
+		cc = CaseCount{}
 		fmt.Printf("result: %d - process in %v\n", count, time.Since(start))
 	}
 }
@@ -72,72 +102,132 @@ func main() {
 
 var res []int
 
-func coolExec(lastState [][]int, rowCount, colCount int) {
-
-	cur := 38
-	prev := 12
-	cur1tail := 10
-	if lastState[0][0] == 0 {
-		if lastState[0][1] == 0 { // 00
-			cur = 38
-			prev = 12
-			cur1tail = 10 // 01
-		} else { // 01
-			cur = 10
-			prev = 12
-			cur1tail = 10 // 01
-		}
-	} else {
-		if lastState[0][1] == 0 { // 10
-			cur = 10
-			prev = 4
-			cur1tail = 6
-		} else { // 11
-			cur = 6
-			prev = 4
-			cur1tail = 6
-		}
-	}
-	res = append(res, 4, prev, cur)
-	for i := 2; i < colCount; i++ {
-		fmt.Printf("%v cur %v - %v - %v\n", lastState[0][:i+1], cur, prev, cur1tail)
-		tmp := cur
-		if lastState[0][i-1] == 1 { //1 + 1
-			if lastState[0][i-2] == 1 { // 11+1
-				cur1tail = 2 * prev
-			} else { // 01+1
-				cur1tail = 2*res[i-1] - 2*res[i-2]
-			}
-		} else { // 0 + 1
-			cur1tailPlus1 := 0          // cur1tail + "1"
-			if lastState[0][i-2] == 1 { // 11+1
-				cur1tailPlus1 = 2 * prev
-			} else { // 01+1
-				fmt.Printf("res = %v\n", res)
-				cur1tailPlus1 = 2*res[i-1] - 2*res[i-2]
-			}
-			fmt.Printf("cur1tail = %v - %v + %v\n", cur, cur1tailPlus1, cur1tail)
-			cur1tail = cur - cur1tailPlus1 + cur1tail
-		}
-		if lastState[0][i] == 1 {
-			cur = cur1tail
-		} else {
-			if lastState[0][i-1] == 1 { // 1+0
-				if lastState[0][i-2] == 1 {
-					cur = cur*4 - 2*prev
-				} else {
-					cur = cur*4 - (2*res[i-1] - 2*res[i-2])
-				}
-			} else { //0+0
-				fmt.Printf("cur = %v*4 - %v\n", cur, cur1tail)
-				cur = cur*4 - cur1tail
-			}
-		}
-		prev = tmp
-		res = append(res, cur)
-	}
-	fmt.Printf("cur %v -%v\n", cur, res)
+type CaseCount struct {
+	OneTopRight       int64
+	OneBottomLeft     int64
+	OneBottomRight    int64
+	ZeroRight         int64
+	ZeroBottom        int64
+	OneRight          int64
+	OneBottom         int64
+	HasZeroBottomLeft int64
+	HasOneBottomLeft  int64
 }
+
+var counted = []CaseCount{{
+	OneTopRight:       3,
+	OneBottomLeft:     3,
+	OneBottomRight:    3,
+	ZeroRight:         2,
+	ZeroBottom:        2,
+	OneRight:          4,
+	OneBottom:         4,
+	HasZeroBottomLeft: 5,
+	HasOneBottomLeft:  7,
+}, {
+	OneTopRight:       1,
+	OneBottomLeft:     1,
+	OneBottomRight:    1,
+	ZeroRight:         2,
+	ZeroBottom:        2,
+	HasZeroBottomLeft: 3,
+	HasOneBottomLeft:  1,
+}}
+
+func (c CaseCount) Count() int64 {
+	return c.OneTopRight + c.OneBottomRight + c.ZeroRight + c.OneRight
+}
+
+// total 1 = top right + bottom right +  zero right
+// total 0 = top right + bottom right + zero right + one right
+func coolExec(caseCount [][]CaseCount, lastState [][]int, rowCount, colCount int) {
+
+	caseCount[0][0] = counted[lastState[0][0]]
+	for i := 1; i < rowCount; i++ {
+		if lastState[i][0] == 0 {
+			caseCount[i][0] = CaseCount{
+				OneTopRight:    2*caseCount[i-1][0].OneBottom + caseCount[i-1][0].OneBottomRight,
+				OneBottomLeft:  caseCount[i-1][0].OneBottom + caseCount[i-1][0].OneBottomLeft + caseCount[i-1][0].OneTopRight,
+				OneBottomRight: caseCount[i-1][0].ZeroBottom + 2*caseCount[i-1][0].OneBottomLeft,
+				ZeroRight:      caseCount[i-1][0].ZeroBottom + caseCount[i-1][0].OneBottomLeft,
+				ZeroBottom:     caseCount[i-1][0].OneBottom + caseCount[i-1][0].ZeroBottom,
+				OneRight:       2*caseCount[i-1][0].OneBottom + 2*caseCount[i-1][0].OneBottomRight,
+				OneBottom:      caseCount[i-1][0].OneBottom + caseCount[i-1][0].ZeroBottom + caseCount[i-1][0].OneBottomLeft + caseCount[i-1][0].OneBottomRight,
+			}
+			caseCount[i][0].HasOneBottomLeft = caseCount[i][0].OneRight + caseCount[i][0].OneBottomRight
+			caseCount[i][0].HasZeroBottomLeft = caseCount[i][0].OneTopRight + caseCount[i][0].ZeroRight
+		} else {
+			caseCount[i][0] = CaseCount{
+				OneTopRight:    caseCount[i-1][0].OneBottomRight,
+				OneBottomLeft:  caseCount[i-1][0].ZeroBottom,
+				OneBottomRight: caseCount[i-1][0].ZeroBottom,
+				ZeroRight:      caseCount[i-1][0].OneBottomLeft + caseCount[i-1][0].ZeroBottom,
+				ZeroBottom:     caseCount[i-1][0].OneBottomRight + caseCount[i-1][0].OneBottomLeft,
+			}
+			caseCount[i][0].HasOneBottomLeft = caseCount[i][0].OneRight + caseCount[i][0].OneBottomRight
+			caseCount[i][0].HasZeroBottomLeft = caseCount[i][0].OneTopRight + caseCount[i][0].ZeroRight
+		}
+	}
+
+	for j := 1; j < colCount; j++ {
+		if lastState[0][j] == 0 {
+			caseCount[0][j] = CaseCount{
+				OneTopRight:    caseCount[0][j-1].OneTopRight + caseCount[0][j-1].OneBottomRight + caseCount[0][j-1].OneRight,
+				OneBottomLeft:  caseCount[0][j-1].OneBottomRight + 2*caseCount[0][j-1].OneRight,
+				OneBottomRight: caseCount[0][j-1].OneTopRight + caseCount[0][j-1].OneBottomRight + caseCount[0][j-1].OneRight,
+				ZeroRight:      caseCount[0][j-1].OneRight + caseCount[0][j-1].ZeroRight,
+				ZeroBottom:     caseCount[0][j-1].OneTopRight + caseCount[0][j-1].ZeroRight,
+				OneRight:       caseCount[0][j-1].ZeroRight + caseCount[0][j-1].OneBottomRight + caseCount[0][j-1].OneTopRight + caseCount[0][j-1].OneRight,
+				OneBottom:      caseCount[0][j-1].OneTopRight + caseCount[0][j-1].OneBottomRight + caseCount[0][j-1].OneRight,
+			}
+			caseCount[0][j].HasOneBottomLeft = caseCount[0][j].OneRight + caseCount[0][j].OneBottomRight
+			caseCount[0][j].HasZeroBottomLeft = caseCount[0][j].OneTopRight + caseCount[0][j].ZeroRight
+		} else {
+			caseCount[0][j] = CaseCount{
+				OneTopRight:    caseCount[0][j-1].ZeroRight,
+				OneBottomLeft:  caseCount[0][j-1].OneBottomRight,
+				OneBottomRight: caseCount[0][j-1].ZeroRight,
+				ZeroRight:      caseCount[0][j-1].OneTopRight + caseCount[0][j-1].OneBottomRight,
+				ZeroBottom:     caseCount[0][j-1].ZeroRight + caseCount[0][j-1].OneTopRight,
+			}
+			caseCount[0][j].HasOneBottomLeft = caseCount[0][j].OneRight + caseCount[0][j].OneBottomRight
+			caseCount[0][j].HasZeroBottomLeft = caseCount[0][j].OneTopRight + caseCount[0][j].ZeroRight
+		}
+	}
+	for i := 1; i < rowCount; i++ {
+		for j := 1; j < colCount; j++ {
+			fmt.Println(caseCount[i-1][j-1].HasZeroBottomLeft, caseCount[i-1][j-1].HasOneBottomLeft)
+			if lastState[i][j] == 0 {
+				caseCount[i][j] = CaseCount{
+					OneTopRight:    caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneBottomRight + caseCount[i][j-1].OneRight + 2*caseCount[i-1][j].OneBottom + caseCount[i-1][j].OneBottomRight - caseCount[i-1][j-1].HasZeroBottomLeft - caseCount[i-1][j-1].HasOneBottomLeft,
+					OneBottomLeft:  caseCount[i][j-1].OneBottomRight + 2*caseCount[i][j-1].OneRight + caseCount[i-1][j].OneBottom + caseCount[i-1][j].OneBottomLeft + caseCount[i-1][j].OneTopRight - caseCount[i-1][j-1].HasZeroBottomLeft - caseCount[i-1][j-1].HasOneBottomLeft,
+					OneBottomRight: caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneBottomRight + caseCount[i][j-1].OneRight + caseCount[i-1][j].ZeroBottom + 2*caseCount[i-1][j].OneBottomLeft - 1 - caseCount[i-1][j-1].HasOneBottomLeft - caseCount[i-1][j-1].HasZeroBottomLeft,
+					ZeroRight:      caseCount[i][j-1].OneRight + caseCount[i][j-1].ZeroRight + caseCount[i-1][j].ZeroBottom + caseCount[i-1][j].OneBottomLeft - 1 - caseCount[i-1][j-1].HasZeroBottomLeft,
+					ZeroBottom:     caseCount[i][j-1].OneTopRight + caseCount[i][j-1].ZeroRight + caseCount[i-1][j].OneBottom + caseCount[i-1][j].ZeroBottom - 1 - caseCount[i-1][j-1].HasZeroBottomLeft,
+					OneRight:       caseCount[i][j-1].ZeroRight + caseCount[i][j-1].OneBottomRight + caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneRight + 2*caseCount[i-1][j].OneBottom + 2*caseCount[i-1][j].OneBottomRight - 1 - 2*caseCount[i-1][j-1].HasZeroBottomLeft,
+					OneBottom:      caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneBottomRight + caseCount[i][j-1].OneRight + caseCount[i-1][j].OneBottom + caseCount[i-1][j].ZeroBottom + caseCount[i-1][j].OneBottomLeft + caseCount[i-1][j].OneBottomRight - 2*caseCount[i-1][j-1].HasZeroBottomLeft,
+				}
+				caseCount[i][j].HasOneBottomLeft = caseCount[i][j].OneRight + caseCount[i][j].OneBottomRight
+				caseCount[i][j].HasZeroBottomLeft = caseCount[i][j].OneTopRight + caseCount[i][j].ZeroRight
+			} else {
+				caseCount[i][j] = CaseCount{
+					OneTopRight:    caseCount[i][j-1].ZeroRight + caseCount[i-1][j].OneBottomRight - caseCount[i-1][j-1].HasZeroBottomLeft,
+					OneBottomLeft:  caseCount[i][j-1].OneBottomRight + caseCount[i-1][j].ZeroBottom - caseCount[i-1][j-1].HasZeroBottomLeft,
+					OneBottomRight: caseCount[i][j-1].ZeroRight + caseCount[i-1][j].ZeroBottom - caseCount[i-1][j-1].HasZeroBottomLeft,
+					ZeroRight:      caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneBottomRight + caseCount[i-1][j].OneBottomLeft + caseCount[i-1][j].ZeroBottom - 2*caseCount[i-1][j-1].HasZeroBottomLeft,
+					ZeroBottom:     caseCount[i][j-1].ZeroRight + caseCount[i][j-1].OneTopRight + caseCount[i-1][j].OneBottomRight + caseCount[i-1][j].OneBottomLeft - 2*caseCount[i-1][j-1].HasZeroBottomLeft,
+				}
+				caseCount[i][j].HasOneBottomLeft = caseCount[i][j].OneRight + caseCount[i][j].OneBottomRight
+				caseCount[i][j].HasZeroBottomLeft = caseCount[i][j].OneTopRight + caseCount[i][j].ZeroRight
+			}
+
+		}
+	}
+
+	fmt.Printf("count %+v %v\n", caseCount[rowCount-1][colCount-1], caseCount[rowCount-1][colCount-1].Count())
+}
+
+var cc = CaseCount{}
 
 func exec(originState, lastState [][]int, rowCount, colCount, i, j int) {
 	for _, c := range cFromP[lastState[i][j]] {
@@ -151,9 +241,37 @@ func exec(originState, lastState [][]int, rowCount, colCount, i, j int) {
 			} else if i < rowCount-1 {
 				exec(originState, lastState, rowCount, colCount, i+1, 0)
 			} else {
-				// for _, v := range originState {
-				// 	fmt.Printf("%v %v %+v\n", i, j, v)
-				// }
+				if originState[i][j+1] == 1 && originState[i+1][j+1] == 0 {
+					cc.OneTopRight++
+				}
+				if originState[i+1][j] == 1 && originState[i+1][j+1] == 0 {
+					cc.OneBottomLeft++
+				}
+				if originState[i][j+1] == 0 && originState[i+1][j+1] == 1 {
+					cc.OneBottomRight++
+				}
+				if originState[i][j+1] == 0 && originState[i+1][j+1] == 0 {
+					cc.ZeroRight++
+				}
+				if originState[i+1][j] == 0 && originState[i+1][j+1] == 0 {
+					cc.ZeroBottom++
+				}
+				if originState[i][j+1] == 1 && originState[i+1][j+1] == 1 {
+					cc.OneRight++
+				}
+				if originState[i+1][j] == 1 && originState[i+1][j+1] == 1 {
+					cc.OneBottom++
+				}
+				if originState[i+1][j+1] == 1 {
+					cc.HasOneBottomLeft++
+				}
+				if originState[i+1][j+1] == 0 {
+					cc.HasZeroBottomLeft++
+				}
+				//for _, v := range originState {
+				//	fmt.Printf("%v %v %+v\n", i, j, v)
+				//}
+				//fmt.Println()
 				count++
 			}
 		}
@@ -181,41 +299,6 @@ func exec(originState, lastState [][]int, rowCount, colCount, i, j int) {
 // 		}
 // 	}
 // }
-
-func execSt(originState, lastState [][]int, rowCount, colCount, y, x int) {
-	// fmt.Printf("%v %v\n", i, j)
-	// for _, v := range originState {
-	// 	fmt.Printf("%v %v %+v\n", i, j, v)
-	// }
-	st := stack.New()
-	st.Push(Params{I: y, J: x})
-	for st.Len() > 0 {
-		params := st.Pop().(Params)
-		fmt.Printf("p%+v\n", params)
-		// originState, lastState, rowCount, colCount, i, j := params.OriginState, params.LastState, params.RowCount, params.ColCount, params.I, params.J
-		i, j := params.I, params.J
-		for _, c := range cFromP[lastState[i][j]] {
-			if check(originState, i, j, c[0], c[1], c[2], c[3]) {
-				originState[i][j] = c[0]
-				originState[i][j+1] = c[1]
-				originState[i+1][j] = c[2]
-				originState[i+1][j+1] = c[3]
-				if j < colCount-1 {
-					st.Push(Params{I: i, J: j + 1})
-				} else if i < rowCount-1 {
-					st.Push(Params{I: i + 1, J: 0})
-				} else {
-					for _, v := range originState {
-						fmt.Printf("%+v\n", v)
-					}
-					fmt.Println()
-					count++
-				}
-			}
-		}
-	}
-
-}
 
 func check2x2(originState [][]int, i, j int, p [][]int) bool {
 
@@ -258,4 +341,26 @@ func genOriginState(rowCount, colCount int) [][]int {
 		originState = append(originState, arr)
 	}
 	return originState
+}
+
+func genCaseCount(rowCount, colCount int) [][]CaseCount {
+	caseCount := [][]CaseCount{}
+	for i := 0; i <= rowCount; i++ {
+		arr := []CaseCount{}
+		for j := 0; j <= colCount; j++ {
+			arr = append(arr, CaseCount{})
+		}
+		caseCount = append(caseCount, arr)
+	}
+	return caseCount
+}
+
+func min(as ...int64) int64 {
+	m := as[0]
+	for i := 1; i < len(as); i++ {
+		if as[i] < m {
+			m = as[i]
+		}
+	}
+	return m
 }

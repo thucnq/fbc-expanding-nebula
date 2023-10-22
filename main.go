@@ -40,32 +40,32 @@ var c2x2FromP = map[string][][][]int{
 
 func main() {
 	var lastStates = [][][]int{
+		//{
+		//	{0, 1},
+		//},
+		//{
+		//	{0},
+		//	{1},
+		//},
 		{
+			{1, 1},
+			{1, 1},
+		},
+		{
+			{0, 1},
+			{1, 1},
+		},
+		{
+			{0, 1},
 			{0, 1},
 		},
 		{
-			{0},
-			{1},
-		},
-		{
-			{1, 1},
-			{1, 1},
-		},
-		{
-			{1, 0},
 			{0, 0},
-		},
-		{
-			{0, 1},
-			{1, 0},
-		},
-		{
-			{0, 1},
 			{1, 1},
 		},
 		{
-			{1, 1},
-			{1, 0},
+			{0, 0},
+			{0, 1},
 		},
 		//{
 		//	{1, 0},
@@ -197,26 +197,39 @@ func coolExec(caseCount [][]CaseCount, lastState [][]int, rowCount, colCount int
 	for i := 1; i < rowCount; i++ {
 		for j := 1; j < colCount; j++ {
 			fmt.Println(caseCount[i-1][j-1].HasZeroBottomLeft, caseCount[i-1][j-1].HasOneBottomLeft)
+			x, y := caseCount[i-1][j-1].HasZeroBottomLeft, caseCount[i-1][j-1].HasOneBottomLeft
+			//if lastState[i-1][j-1] == 0 {
+			//	x, y = y, x
+			//}
 			if lastState[i][j] == 0 {
 				caseCount[i][j] = CaseCount{
-					OneTopRight:    caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneBottomRight + caseCount[i][j-1].OneRight + 2*caseCount[i-1][j].OneBottom + caseCount[i-1][j].OneBottomRight - caseCount[i-1][j-1].HasZeroBottomLeft - caseCount[i-1][j-1].HasOneBottomLeft,
-					OneBottomLeft:  caseCount[i][j-1].OneBottomRight + 2*caseCount[i][j-1].OneRight + caseCount[i-1][j].OneBottom + caseCount[i-1][j].OneBottomLeft + caseCount[i-1][j].OneTopRight - caseCount[i-1][j-1].HasZeroBottomLeft - caseCount[i-1][j-1].HasOneBottomLeft,
-					OneBottomRight: caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneBottomRight + caseCount[i][j-1].OneRight + caseCount[i-1][j].ZeroBottom + 2*caseCount[i-1][j].OneBottomLeft - 1 - caseCount[i-1][j-1].HasOneBottomLeft - caseCount[i-1][j-1].HasZeroBottomLeft,
-					ZeroRight:      caseCount[i][j-1].OneRight + caseCount[i][j-1].ZeroRight + caseCount[i-1][j].ZeroBottom + caseCount[i-1][j].OneBottomLeft - 1 - caseCount[i-1][j-1].HasZeroBottomLeft,
-					ZeroBottom:     caseCount[i][j-1].OneTopRight + caseCount[i][j-1].ZeroRight + caseCount[i-1][j].OneBottom + caseCount[i-1][j].ZeroBottom - 1 - caseCount[i-1][j-1].HasZeroBottomLeft,
-					OneRight:       caseCount[i][j-1].ZeroRight + caseCount[i][j-1].OneBottomRight + caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneRight + 2*caseCount[i-1][j].OneBottom + 2*caseCount[i-1][j].OneBottomRight - 1 - 2*caseCount[i-1][j-1].HasZeroBottomLeft,
-					OneBottom:      caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneBottomRight + caseCount[i][j-1].OneRight + caseCount[i-1][j].OneBottom + caseCount[i-1][j].ZeroBottom + caseCount[i-1][j].OneBottomLeft + caseCount[i-1][j].OneBottomRight - 2*caseCount[i-1][j-1].HasZeroBottomLeft,
+					OneTopRight:    caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneBottomRight + caseCount[i][j-1].OneRight + 2*caseCount[i-1][j].OneBottom + caseCount[i-1][j].OneBottomRight - y - 1,
+					OneBottomLeft:  caseCount[i][j-1].OneBottomRight + 2*caseCount[i][j-1].OneRight + caseCount[i-1][j].OneBottom + caseCount[i-1][j].OneBottomLeft + caseCount[i-1][j].OneTopRight - y - 1,
+					OneBottomRight: caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneBottomRight + caseCount[i][j-1].OneRight + caseCount[i-1][j].ZeroBottom + 2*caseCount[i-1][j].OneBottomLeft - 1 - y - x,
+					ZeroRight:      caseCount[i][j-1].OneRight + caseCount[i][j-1].ZeroRight + caseCount[i-1][j].ZeroBottom + caseCount[i-1][j].OneBottomLeft - 1 - x,
+					ZeroBottom:     caseCount[i][j-1].OneTopRight + caseCount[i][j-1].ZeroRight + caseCount[i-1][j].OneBottom + caseCount[i-1][j].ZeroBottom - 1 - x,
+					OneRight:       caseCount[i][j-1].ZeroRight + caseCount[i][j-1].OneBottomRight + caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneRight + 2*caseCount[i-1][j].OneBottom + 2*caseCount[i-1][j].OneBottomRight - 2*y - 1,
+					OneBottom:      caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneBottomRight + caseCount[i][j-1].OneRight + caseCount[i-1][j].OneBottom + caseCount[i-1][j].ZeroBottom + caseCount[i-1][j].OneBottomLeft + caseCount[i-1][j].OneBottomRight,
 				}
 				caseCount[i][j].HasOneBottomLeft = caseCount[i][j].OneRight + caseCount[i][j].OneBottomRight
 				caseCount[i][j].HasZeroBottomLeft = caseCount[i][j].OneTopRight + caseCount[i][j].ZeroRight
 			} else {
 				caseCount[i][j] = CaseCount{
-					OneTopRight:    caseCount[i][j-1].ZeroRight + caseCount[i-1][j].OneBottomRight - caseCount[i-1][j-1].HasZeroBottomLeft,
-					OneBottomLeft:  caseCount[i][j-1].OneBottomRight + caseCount[i-1][j].ZeroBottom - caseCount[i-1][j-1].HasZeroBottomLeft,
-					OneBottomRight: caseCount[i][j-1].ZeroRight + caseCount[i-1][j].ZeroBottom - caseCount[i-1][j-1].HasZeroBottomLeft,
-					ZeroRight:      caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneBottomRight + caseCount[i-1][j].OneBottomLeft + caseCount[i-1][j].ZeroBottom - 2*caseCount[i-1][j-1].HasZeroBottomLeft,
-					ZeroBottom:     caseCount[i][j-1].ZeroRight + caseCount[i][j-1].OneTopRight + caseCount[i-1][j].OneBottomRight + caseCount[i-1][j].OneBottomLeft - 2*caseCount[i-1][j-1].HasZeroBottomLeft,
+					OneTopRight:    caseCount[i][j-1].ZeroRight + caseCount[i-1][j].OneBottomRight - x,
+					OneBottomLeft:  caseCount[i][j-1].OneBottomRight + caseCount[i-1][j].ZeroBottom - x,
+					OneBottomRight: caseCount[i][j-1].ZeroRight + caseCount[i-1][j].ZeroBottom - x,
+					ZeroRight:      caseCount[i][j-1].OneTopRight + caseCount[i][j-1].OneBottomRight + caseCount[i-1][j].OneBottomLeft + caseCount[i-1][j].ZeroBottom - x - y,
+					ZeroBottom:     caseCount[i][j-1].ZeroRight + caseCount[i][j-1].OneTopRight + caseCount[i-1][j].OneBottomRight + caseCount[i-1][j].OneBottomLeft - x - y,
 				}
+				if lastState[i-1][j] == 0 {
+					fmt.Printf("%+v\n", caseCount[i-1][j])
+					caseCount[i][j].OneTopRight -= 2
+				}
+				//if lastState[i][j-1] == 1 {
+				//	caseCount[i][j].OneTopRight -= caseCount[i-1][j-1].ZeroBottom + caseCount[i-1][j-1].OneBottomLeft
+				//} else {
+				//	caseCount[i][j].OneTopRight -= caseCount[i-1][j-1].ZeroBottom + caseCount[i-1][j-1].OneBottomLeft
+				//}
 				caseCount[i][j].HasOneBottomLeft = caseCount[i][j].OneRight + caseCount[i][j].OneBottomRight
 				caseCount[i][j].HasZeroBottomLeft = caseCount[i][j].OneTopRight + caseCount[i][j].ZeroRight
 			}
